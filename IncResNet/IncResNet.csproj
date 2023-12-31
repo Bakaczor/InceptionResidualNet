@@ -9,8 +9,8 @@
 
   <ItemGroup>
     <PackageReference Include="TorchSharp" Version="0.101.5" />
-    <PackageReference Include="TorchSharp-cpu" Version="0.101.5" />
     <PackageReference Include="TorchSharp-cuda-windows" Version="0.101.5" />
+    <PackageReference Include="TorchVision" Version="0.101.5" />
   </ItemGroup>
 
 </Project>

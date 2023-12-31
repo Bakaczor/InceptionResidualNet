@@ -1,39 +1,41 @@
 ﻿using System.Diagnostics;
 using TorchSharp;
 using TorchSharp.Modules;
+using static TorchSharp.torch;
 using static TorchSharp.torch.nn;
 using static TorchSharp.torch.nn.functional;
 using static TorchSharp.torch.utils.data;
 
-namespace IncResNet; 
+namespace IncResNet;
 /// <summary>
 /// Custom configuration for training and evaluating models operating on 200x200 image datasets
 /// </summary>
 public static class Configuration {
     private static int _trainBatchSize = 32;
     private static int _testBatchSize = 64;
-    private static int _epochs = 128;
+    private static int _epochs = 25;
 
-    private readonly static int _loggingInterval = 25; // for logging frequency
-    private readonly static int _numClasses = 111; // number of different ages in dataset
+    private static readonly string trainPath = @"C:\Users\Bakaczor\PycharmProjects\dataAugmentation\final\training";
+    private static readonly string testPath = @"C:\Users\Bakaczor\PycharmProjects\dataAugmentation\final\test";
+
+    private readonly static int _loggingInterval = 10; // for logging frequency
 
     private readonly static int _timeout = 3600; // by default an hour
 
-    public static void Main(string[] args) {
-        string datasetPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+    public static void Start(string[] args) {
 
-        torch.random.manual_seed(1);
+        random.manual_seed(1);
 
-        var device = torch.cuda.is_available() ? torch.CUDA : torch.CPU;
+        var device = cuda.is_available() ? CUDA : CPU;
 
         if (device.type == DeviceType.CUDA) {
-            _trainBatchSize *= 8;
-            _testBatchSize *= 8;
-            _epochs *= 8;
+            _trainBatchSize *= 4;
+            _testBatchSize *= 4;
+            _epochs *= 4;
         }
 
         Console.WriteLine($"\tCreating the model...");
-        Module<torch.Tensor, torch.Tensor> model = IncResNet.IncResNetv1(device);
+        Module<Tensor, Tensor> model = IncResNet.IncResNetv1(device);
 
         // override epochs and timeout with console input
         var epochs = args.Length > 1 ? int.Parse(args[1]) : _epochs;
@@ -45,41 +47,42 @@ public static class Configuration {
         Console.WriteLine($"\tPreparing training and test data...");
         Console.WriteLine();
 
-        // TODO: import nuget and load images
-        using (Dataset trainData = torchvision.datasets.ImageFolder(datasetPath, true, download: true),
-                       testData = torchvision.datasets.CIFAR100(datasetPath, false, download: true)) {
-            using var train = DataLoader(trainData, _trainBatchSize, device: device, shuffle: true);
-            using var test = DataLoader(testData, _testBatchSize, device: device, shuffle: false);
+        using var trainData = new ImageDataset(trainPath);
+        using var testData = new ImageDataset(testPath);
 
-            using var optimizer = torch.optim.Adam(model.parameters());
+        using var train = DataLoader(trainData, _trainBatchSize, true, device);
+        using var test = DataLoader(testData, _testBatchSize, false, device);
 
-            var totalSW = new Stopwatch();
-            totalSW.Start();
+        using var optimizer = optim.Adam(model.parameters());
 
-            for (int epoch = 1; epoch <= epochs; epoch++) {
+        var totalSW = new Stopwatch();
+        totalSW.Start();
 
-                var epochSW = new Stopwatch();
-                epochSW.Start();
+        for (int epoch = 1; epoch <= epochs; epoch++) {
 
-                Train(model, optimizer, MSELoss(), train, epoch, trainData.Count);
-                Test(model, MSELoss(), test, testData.Count);
+            var epochSW = new Stopwatch();
+            epochSW.Start();
 
-                epochSW.Stop();
-                Console.WriteLine($"Elapsed time for this epoch: {epochSW.Elapsed.TotalSeconds}s.");
+            Train(model, optimizer, MSELoss(), train, epoch, trainData.Count);
+            Test(model, MSELoss(), test, testData.Count);
 
-                if (totalSW.Elapsed.TotalSeconds > timeout) { break; }
-            }
+            epochSW.Stop();
+            Console.WriteLine($"Elapsed time for this epoch: {epochSW.Elapsed.TotalSeconds}s.");
 
-            totalSW.Stop();
-            Console.WriteLine($"Elapsed training time: {totalSW.Elapsed}s.");
+            if (totalSW.Elapsed.TotalSeconds > timeout) { break; }
         }
+
+        totalSW.Stop();
+        Console.WriteLine($"Elapsed training time: {totalSW.Elapsed}s.");
+
+
         model.Dispose();
     }
 
     private static void Train(
-        Module<torch.Tensor, torch.Tensor> model,
-        torch.optim.Optimizer optimizer,
-        Loss<torch.Tensor, torch.Tensor, torch.Tensor> loss,
+        Module<Tensor, Tensor> model,
+        optim.Optimizer optimizer,
+        Loss<Tensor, Tensor, Tensor> loss,
         DataLoader dataLoader,
         int epoch,
         long size) {
@@ -92,7 +95,7 @@ public static class Configuration {
 
         Console.WriteLine($"Epoch: {epoch}...");
 
-        using var d = torch.NewDisposeScope();
+        using var d = NewDisposeScope();
         foreach (var data in dataLoader) {
 
             optimizer.zero_grad();
@@ -100,7 +103,7 @@ public static class Configuration {
             var target = data["label"];
             var prediction = model.call(data["data"]);
             var lsm = softmax(prediction, 1);
-            var output = loss.call(lsm, target);
+            var output = loss.call(lsm.mean(new long[] { 1 }), target);
 
             output.backward();
 
@@ -108,8 +111,8 @@ public static class Configuration {
 
             total += target.shape[0];
 
-            var predicted = prediction.argmax(1);
-            correct += predicted.eq(target).sum().ToInt64();
+            var predicted = prediction.mean(new long[] { 1 });
+            correct += predicted.to_type(int32).equal(target.to_type(int32)).sum().ToInt32();
 
             if (batchId % _loggingInterval == 0 || total == size) {
                 Console.WriteLine($"\rTrain: epoch {epoch} [{total} / {size}] Loss: {output.ToSingle():0.000000} | " +
@@ -122,8 +125,8 @@ public static class Configuration {
     }
 
     private static void Test(
-        Module<torch.Tensor, torch.Tensor> model,
-        Loss<torch.Tensor, torch.Tensor, torch.Tensor> loss,
+        Module<Tensor, Tensor> model,
+        Loss<Tensor, Tensor, Tensor> loss,
         DataLoader dataLoader,
         long size) {
 
@@ -133,19 +136,19 @@ public static class Configuration {
         long correct = 0;
         int batchCount = 0;
 
-        using var d = torch.NewDisposeScope();
+        using var d = NewDisposeScope();
         foreach (var data in dataLoader) {
 
             var target = data["label"];
             var prediction = model.call(data["data"]);
             var lsm = softmax(prediction, 1);
-            var output = loss.call(lsm, target);
+            var output = loss.call(lsm.mean(new long[] { 1 }), target);
 
             testLoss += output.ToSingle();
             batchCount += 1;
 
-            var predicted = prediction.argmax(1);
-            correct += predicted.eq(target).sum().ToInt64();
+            var predicted = prediction.mean(new long[] { 1 });
+            correct += predicted.to_type(int32).equal(target.to_type(int32)).sum().ToInt32();
 
             d.DisposeEverything();
         }

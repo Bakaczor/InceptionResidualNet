@@ -6,7 +6,7 @@ namespace IncResNet;
 /// <summary>
 /// Custom version of IncResNet for 200x200 images.
 /// </summary>
-public class IncResNet : Module<Tensor, Tensor> { 
+public class IncResNet : Module<Tensor, Tensor> {
     private readonly Module<Tensor, Tensor> _layers;
 
     public static IncResNet IncResNetv1(Device? device = null) {
@@ -149,5 +149,5 @@ public class IncResNet : Module<Tensor, Tensor> {
             Tensor y = _shortcut.forward(input);
             return x.add_(y).relu_();
         }
-    }   
+    }
 }
