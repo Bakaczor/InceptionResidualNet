@@ -1,4 +1,5 @@
-﻿using TorchSharp;
+﻿using System.IO;
+using TorchSharp;
 using static TorchSharp.torch;
 using static TorchSharp.torch.nn;
 
@@ -9,8 +10,12 @@ namespace IncResNet;
 public class IncResNet : Module<Tensor, Tensor> {
     private readonly Module<Tensor, Tensor> _layers;
 
-    public static IncResNet IncResNetv1(Device? device = null) {
-        return new IncResNet("IncResNetv1", new int[] { 4, 8, 4 }, 768, device);
+    public static IncResNet IncResNetv1(Device? device = null, string? weights = null) {
+        var model = new IncResNet("IncResNetv1", new int[] { 4, 8, 4 }, 768, device);
+        if (weights != null) {
+            model.load(weights);
+        }
+        return model;
     }
 
     public IncResNet(string name, IList<int> numModules, int resultSize, Device? device = null) : base(name) {
@@ -38,11 +43,6 @@ public class IncResNet : Module<Tensor, Tensor> {
         if (device != null && device.type == DeviceType.CUDA) {
             this.to(device);
         }
-    }
-
-    public IncResNet(string path, Device? device = null) :
-        this("IncResNetv1", new int[] { 4, 8, 4 }, 768, device) {
-        load(path);
     }
 
     private static void MakeLayer(string name, List<(string, Module<Tensor, Tensor>)> modules, int filters, int numModules) {

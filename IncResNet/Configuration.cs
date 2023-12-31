@@ -15,6 +15,7 @@ public static class Configuration {
     private static int _testBatchSize = 64;
     private static int _epochs = 25;
 
+    private static readonly string weightsPath = @".\model\weights.pt";
     private static readonly string trainPath = @"C:\Users\Bakaczor\PycharmProjects\dataAugmentation\final\training";
     private static readonly string testPath = @"C:\Users\Bakaczor\PycharmProjects\dataAugmentation\final\test";
 
@@ -35,11 +36,12 @@ public static class Configuration {
         }
 
         Console.WriteLine($"\tCreating the model...");
-        Module<Tensor, Tensor> model = IncResNet.IncResNetv1(device);
 
-        // override epochs and timeout with console input
-        var epochs = args.Length > 1 ? int.Parse(args[1]) : _epochs;
-        var timeout = args.Length > 2 ? int.Parse(args[2]) : _timeout;
+        var weights = args.Length > 1 ? args[1] : null;
+        var epochs = args.Length > 2 ? int.Parse(args[2]) : _epochs;
+        var timeout = args.Length > 3 ? int.Parse(args[3]) : _timeout;
+
+        Module<Tensor, Tensor> model = IncResNet.IncResNetv1(device, weights);
 
         Console.WriteLine($"\tRunning IncResNetv1 on {device.type} for {epochs} epochs, " +
             $"terminating after {TimeSpan.FromSeconds(timeout)}.");
@@ -75,7 +77,11 @@ public static class Configuration {
         totalSW.Stop();
         Console.WriteLine($"Elapsed training time: {totalSW.Elapsed}s.");
 
-
+        if (weights != null) {
+            model.save(weights);
+        } else {
+            model.save(weightsPath);
+        }
         model.Dispose();
     }
 
