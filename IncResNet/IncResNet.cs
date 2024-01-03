@@ -1,5 +1,4 @@
-﻿using System.IO;
-using TorchSharp;
+﻿using TorchSharp;
 using static TorchSharp.torch;
 using static TorchSharp.torch.nn;
 
@@ -99,12 +98,9 @@ public class IncResNet : Module<Tensor, Tensor> {
     }
 
     private class InceptionResidualBlock : Module<Tensor, Tensor> {
-        public static int expansion = 4;
-
         private readonly Module<Tensor, Tensor> _module1x1;
         private readonly Module<Tensor, Tensor> _module3x3;
         private readonly Module<Tensor, Tensor> _module5x5;
-        private readonly Module<Tensor, Tensor> _shortcut;
 
         public InceptionResidualBlock(string name, long filters) : base(name) {
             long filters4 = filters / 4;
@@ -137,8 +133,6 @@ public class IncResNet : Module<Tensor, Tensor> {
                 ($"{name}-relu-3", ReLU(inplace: true))
             });
 
-            _shortcut = Sequential();
-
             RegisterComponents();
         }
 
@@ -146,8 +140,7 @@ public class IncResNet : Module<Tensor, Tensor> {
             Tensor x = cat(tensors: new List<Tensor> {
                 _module1x1.forward(input), _module3x3.forward(input), _module5x5.forward(input)
             }, dim: 1);
-            Tensor y = _shortcut.forward(input);
-            return x.add_(y).relu_();
+            return x.add_(input).relu_();
         }
     }
 }

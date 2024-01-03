@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "IncResNet": {
+      "commandName": "Project",
+      "commandLineArgs": "C:\\Users\\Bakaczor\\source\\repos\\IncResNet\\IncResNet\\bin\\Release\\net7.0\\weights.bin"
+    }
+  }
+}

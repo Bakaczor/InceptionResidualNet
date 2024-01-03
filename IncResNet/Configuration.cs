@@ -15,13 +15,13 @@ public static class Configuration {
     private static int _testBatchSize = 64;
     private static int _epochs = 25;
 
-    private static readonly string weightsPath = @".\model\weights.pt";
+    private static readonly string weightsPath = @".\weights.bin";
     private static readonly string trainPath = @"C:\Users\Bakaczor\PycharmProjects\dataAugmentation\final\training";
     private static readonly string testPath = @"C:\Users\Bakaczor\PycharmProjects\dataAugmentation\final\test";
 
-    private readonly static int _loggingInterval = 10; // for logging frequency
+    private readonly static int _loggingInterval = 20; // for logging frequency
 
-    private readonly static int _timeout = 3600; // by default an hour
+    private readonly static int _timeout = 3 * 3600; // max training time
 
     public static void Start(string[] args) {
 
@@ -37,9 +37,12 @@ public static class Configuration {
 
         Console.WriteLine($"\tCreating the model...");
 
-        var weights = args.Length > 1 ? args[1] : null;
-        var epochs = args.Length > 2 ? int.Parse(args[2]) : _epochs;
-        var timeout = args.Length > 3 ? int.Parse(args[3]) : _timeout;
+        var weights = args.Length > 0 ? args[0] : null;
+        if (weights != null) {
+            Console.WriteLine("\tWeights loaded...");
+        }
+        var epochs = args.Length > 1 ? int.Parse(args[1]) : _epochs;
+        var timeout = args.Length > 2 ? int.Parse(args[2]) : _timeout;
 
         Module<Tensor, Tensor> model = IncResNet.IncResNetv1(device, weights);
 
