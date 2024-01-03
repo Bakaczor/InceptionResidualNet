@@ -9,8 +9,9 @@ namespace IncResNet;
 public class IncResNet : Module<Tensor, Tensor> {
     private readonly Module<Tensor, Tensor> _layers;
 
+    // Predifined settings for deep regresive model.
     public static IncResNet IncResNetv1(Device? device = null, string? weights = null) {
-        var model = new IncResNet("IncResNetv1", new int[] { 4, 8, 4 }, 768, device);
+        var model = new IncResNet("IncResNetv1", new int[] { 4, 8, 4 }, 1, device);
         if (weights != null) {
             model.load(weights);
         }

@@ -3,7 +3,6 @@ using TorchSharp;
 using TorchSharp.Modules;
 using static TorchSharp.torch;
 using static TorchSharp.torch.nn;
-using static TorchSharp.torch.nn.functional;
 using static TorchSharp.torch.utils.data;
 
 namespace IncResNet;
@@ -40,6 +39,8 @@ public static class Configuration {
         var weights = args.Length > 0 ? args[0] : null;
         if (weights != null) {
             Console.WriteLine("\tWeights loaded...");
+        } else {
+            Console.WriteLine("\tWeights not loaded...");
         }
         var epochs = args.Length > 1 ? int.Parse(args[1]) : _epochs;
         var timeout = args.Length > 2 ? int.Parse(args[2]) : _timeout;
@@ -111,21 +112,18 @@ public static class Configuration {
 
             var target = data["label"];
             var prediction = model.call(data["data"]);
-            var lsm = softmax(prediction, 1);
-            var output = loss.call(lsm.mean(new long[] { 1 }), target);
-
+            var output = loss.call(prediction, target);
             output.backward();
 
             optimizer.step();
 
             total += target.shape[0];
-
-            var predicted = prediction.mean(new long[] { 1 });
-            correct += predicted.to_type(int32).equal(target.to_type(int32)).sum().ToInt32();
+            correct += prediction.to_type(int32).eq_(target.to_type(int32)).sum().ToInt32();
 
             if (batchId % _loggingInterval == 0 || total == size) {
-                Console.WriteLine($"\rTrain: epoch {epoch} [{total} / {size}] Loss: {output.ToSingle():0.000000} | " +
-                    $"Accuracy: {((float)correct / total):0.000000}");
+                double lossSq = Math.Sqrt(output.ToSingle());
+                Console.WriteLine($"\r[Train] Epoch: {epoch} [{total} / {size}] MSE Root: {lossSq:0.000000} | " +
+                    $"Total perfect prediction: {((float)correct / total):0.000000}");
             }
             batchId++;
 
@@ -150,18 +148,16 @@ public static class Configuration {
 
             var target = data["label"];
             var prediction = model.call(data["data"]);
-            var lsm = softmax(prediction, 1);
-            var output = loss.call(lsm.mean(new long[] { 1 }), target);
+            var output = loss.call(prediction, target);
 
             testLoss += output.ToSingle();
             batchCount += 1;
 
-            var predicted = prediction.mean(new long[] { 1 });
-            correct += predicted.to_type(int32).equal(target.to_type(int32)).sum().ToInt32();
+            correct += prediction.to_type(int32).eq_(target.to_type(int32)).sum().ToInt32();
 
             d.DisposeEverything();
         }
-        Console.WriteLine($"\rTest set: Average loss {(testLoss / batchCount):0.0000} | " +
-            $"Accuracy {((float)correct / size):0.0000}");
+        Console.WriteLine($"\r[Test] Average MSE Root: {(Math.Sqrt(testLoss) / batchCount):0.0000} | " +
+            $"Total perfect prediction: {((float)correct / size):0.0000}");
     }
 }
