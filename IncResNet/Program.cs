@@ -1,7 +1,7 @@
 ﻿namespace IncResNet;
 
 public class Program {
-    public static void Main(string[] args) {
-        Configuration.Start(args);
+    public static async Task Main(string[] args) {
+        await Configuration.Start(args);
     }
 }

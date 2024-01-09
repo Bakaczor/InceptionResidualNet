@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Text;
 using TorchSharp;
 using TorchSharp.Modules;
 using static TorchSharp.torch;
@@ -15,14 +16,18 @@ public static class Configuration {
     private static int _epochs = 25;
 
     private static readonly string weightsPath = @".\weights.bin";
-    private static readonly string trainPath = @"C:\Users\Bakaczor\PycharmProjects\dataAugmentation\final\training";
-    private static readonly string testPath = @"C:\Users\Bakaczor\PycharmProjects\dataAugmentation\final\test";
+    private static readonly string trainPath = @"D:\workspace\undersampled_dataset\training";
+    private static readonly string testPath = @"D:\workspace\undersampled_dataset\test";
 
-    private readonly static int _loggingInterval = 20; // for logging frequency
+    private static readonly int _loggingInterval = 10; // for logging frequency
+    private static readonly int _timeout = 2 * 3600; // max training time
 
-    private readonly static int _timeout = 3 * 3600; // max training time
+    private static readonly string _trainPath = @".\train.txt";
+    private static readonly string _testPath = @".\test.txt";
+    private static readonly StringBuilder _trainData = new();
+    private static readonly StringBuilder _testData = new();
 
-    public static void Start(string[] args) {
+    public static async Task Start(string[] args) {
 
         random.manual_seed(1);
 
@@ -65,11 +70,12 @@ public static class Configuration {
         totalSW.Start();
 
         for (int epoch = 1; epoch <= epochs; epoch++) {
-
             var epochSW = new Stopwatch();
             epochSW.Start();
 
+            _trainData.Append($"epoch-{epoch}" + Environment.NewLine);
             Train(model, optimizer, MSELoss(), train, epoch, trainData.Count);
+            _testData.Append($"epoch-{epoch}" + Environment.NewLine);
             Test(model, MSELoss(), test, testData.Count);
 
             epochSW.Stop();
@@ -80,6 +86,9 @@ public static class Configuration {
 
         totalSW.Stop();
         Console.WriteLine($"Elapsed training time: {totalSW.Elapsed}s.");
+
+        await File.AppendAllTextAsync(_trainPath, _trainData.ToString());
+        await File.AppendAllTextAsync(_testPath, _testData.ToString());
 
         if (weights != null) {
             model.save(weights);
@@ -122,8 +131,10 @@ public static class Configuration {
 
             if (batchId % _loggingInterval == 0 || total == size) {
                 double lossSq = Math.Sqrt(output.ToSingle());
+                float percent = (float)correct / total;
+                _trainData.Append($"{lossSq:0.000000};{percent:0.000000}" + Environment.NewLine);
                 Console.WriteLine($"\r[Train] Epoch: {epoch} [{total} / {size}] MSE Root: {lossSq:0.000000} | " +
-                    $"Total perfect prediction: {((float)correct / total):0.000000}");
+                    $"Total perfect prediction: {percent:0.000000}");
             }
             batchId++;
 
@@ -157,7 +168,10 @@ public static class Configuration {
 
             d.DisposeEverything();
         }
-        Console.WriteLine($"\r[Test] Average MSE Root: {(Math.Sqrt(testLoss) / batchCount):0.0000} | " +
-            $"Total perfect prediction: {((float)correct / size):0.0000}");
+        double lossSq = Math.Sqrt(testLoss) / batchCount;
+        float percent = (float)correct / size;
+        _testData.Append($"{lossSq:0.000000};{percent:0.000000}" + Environment.NewLine);
+        Console.WriteLine($"\r[Test] Average MSE Root: {lossSq:0.000000} | " +
+            $"Total perfect prediction: {percent:0.000000}");
     }
 }
