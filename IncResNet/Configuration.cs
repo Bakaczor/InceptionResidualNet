@@ -171,7 +171,7 @@ public static class Configuration {
 
             long n = target.shape[0];
             for (int i = 0; i < n; i++) {
-                _testStrings.AppendLine($"{target[i]};{prediction[i]}");
+                _testStrings.AppendLine($"{(int)target[i]};{(float)prediction[i]}");
             }
 
             total += n;
