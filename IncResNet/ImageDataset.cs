@@ -8,6 +8,7 @@ namespace IncResNet;
 /// </summary>
 class ImageDataset : Dataset {
     private readonly string _rootDir;
+
     private readonly List<(string, int)> _images;
 
     public override long Count => _images.Count;

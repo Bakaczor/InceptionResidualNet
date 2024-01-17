@@ -1,7 +1,8 @@
 {
   "profiles": {
     "IncResNet": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "commandLineArgs": ".\\weights.bin\r\n"
     }
   }
 }
