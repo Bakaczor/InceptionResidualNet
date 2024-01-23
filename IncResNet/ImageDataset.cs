@@ -44,7 +44,7 @@ class ImageDataset : Dataset {
         Tensor imageTensor = read_image(imgPath, ImageReadMode.RGB);
         imageTensor = imageTensor.to_type(float32);
 
-        Tensor labelTensor = new float[]{ label };
+        Tensor labelTensor = new float[] { label };
 
         return new Dictionary<string, Tensor>
         {
