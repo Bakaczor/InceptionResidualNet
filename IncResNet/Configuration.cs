@@ -8,7 +8,7 @@ using static TorchSharp.torch.utils.data;
 
 namespace IncResNet;
 /// <summary>
-/// Custom configuration for training and testing models operating on 200x200 image datasets
+/// Custom configuration for training and testing models operating on 200x200 image datasets.
 /// </summary>
 public static class Configuration {
     private static int _trainBatchSize = 32;
@@ -30,7 +30,11 @@ public static class Configuration {
     private static readonly StringBuilder _trainStrings = new();
     private static readonly StringBuilder _validationStrings = new();
     private static readonly StringBuilder _testStrings = new();
-
+    /// <summary>
+    /// Starts the training or testing process based on the specified parameters.
+    /// </summary>
+    /// <param name="args">An array of command-line arguments: weights file path, number of epochs, timeout duration.</param>
+    /// <param name="training">A boolean indicating whether to run in training mode or testing mode.</param>
     public static void Start(string[] args, bool training) {
 
         random.manual_seed(1);
@@ -75,7 +79,15 @@ public static class Configuration {
         }
         model.Dispose();
     }
-
+    /// <summary>
+    /// Trains the model with the specified parameters.
+    /// </summary>
+    /// <param name="model">The model to be trained.</param>
+    /// <param name="optimizer">The optimizer to use for training.</param>
+    /// <param name="loss">The loss function to use for training.</param>
+    /// <param name="dataLoader">The data loader for the training data.</param>
+    /// <param name="epoch">The current epoch number.</param>
+    /// <param name="size">The total number of samples in the training dataset.</param>
     private static void Train(
         Module<Tensor, Tensor> model,
         optim.Optimizer optimizer,
@@ -119,7 +131,13 @@ public static class Configuration {
             d.DisposeEverything();
         }
     }
-
+    /// <summary>
+    /// Validates the model on the validation dataset.
+    /// </summary>
+    /// <param name="model">The model to be validated.</param>
+    /// <param name="loss">The loss function to use for validation.</param>
+    /// <param name="dataLoader">The data loader for the validation data.</param>
+    /// <param name="size">The total number of samples in the validation dataset.</param>
     private static void Validate(
         Module<Tensor, Tensor> model,
         Loss<Tensor, Tensor, Tensor> loss,
@@ -152,7 +170,12 @@ public static class Configuration {
         Console.WriteLine($"\r[Validate] Average MSE Root: {lossSq:0.000000} | " +
             $"Total perfect prediction: {percent:0.000000}");
     }
-
+    /// <summary>
+    /// Tests the model on the test dataset.
+    /// </summary>
+    /// <param name="model">The model to be tested.</param>
+    /// <param name="dataLoader">The data loader for the test data.</param>
+    /// <param name="size">The total number of samples in the test dataset.</param>
     private static void Test(
     Module<Tensor, Tensor> model,
     DataLoader dataLoader,
@@ -178,9 +201,14 @@ public static class Configuration {
 
             d.DisposeEverything();
         }
-
     }
-
+    /// <summary>
+    /// Manages the training process of the model.
+    /// </summary>
+    /// <param name="device">The device to run the model on (e.g., CPU or CUDA).</param>
+    /// <param name="model">The model to be trained.</param>
+    /// <param name="epochs">The number of epochs to train for.</param>
+    /// <param name="timeout">The maximum training time allowed.</param>
     private static void Training(Device device, Module<Tensor, Tensor> model, int epochs, int timeout) {
         Console.WriteLine($"\tRunning IncResNetv1 on {device.type} for {epochs} epochs, " +
             $"terminating after {TimeSpan.FromSeconds(timeout)}.");
@@ -216,7 +244,11 @@ public static class Configuration {
         totalSW.Stop();
         Console.WriteLine($"Elapsed training time: {totalSW.Elapsed}s.");
     }
-
+    /// <summary>
+    /// Manages the testing process of the model.
+    /// </summary>
+    /// <param name="device">The device to run the model on (e.g., CPU or CUDA).</param>
+    /// <param name="model">The model to be tested.</param>
     private static void Testing(Device device, Module<Tensor, Tensor> model) {
         Console.WriteLine($"\tTesting IncResNetv1 on {device.type}.");
         Console.WriteLine($"\tPreparing test data...");
