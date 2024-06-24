@@ -52,4 +52,7 @@ Program uses a few TorchSharp libraries in a form of NuGet packages:
 and a suitable backend for TorchSharp (choose CUDA if you have Nvidia GPU, otherwise CPU).
 
 ## Contact
-In case of any problems, contact me at my university mail: bartosz.kaczorowski2.stud@pw.edu.pl.
+If you have any questions or suggestions feel free to contact me at ordinary.email.address@protonmail.com.
+
+---
+*Copyright © 2024 Bartosz Kaczorowski*
